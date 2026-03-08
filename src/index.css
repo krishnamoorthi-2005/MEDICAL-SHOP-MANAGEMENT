@@ -1,0 +1,253 @@
+/* Import professional fonts */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Poppins:wght@500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
+All colors MUST be HSL.
+*/
+
+@layer base {
+  :root {
+    /* Sophisticated blue-gray background with depth */
+    --background: 220 18% 97%;
+    --foreground: 222 47% 11%;
+
+    /* Premium card colors with subtle warmth */
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 11%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 11%;
+
+    /* Rich professional green primary */
+    --primary: 160 84% 39%;
+    --primary-foreground: 0 0% 100%;
+
+    /* Soft secondary with slight blue tint */
+    --secondary: 214 32% 91%;
+    --secondary-foreground: 222 47% 11%;
+
+    /* Refined muted tones */
+    --muted: 217 20% 94%;
+    --muted-foreground: 215 16% 47%;
+
+    /* Accent with medical green undertone */
+    --accent: 152 60% 53%;
+    --accent-foreground: 0 0% 100%;
+
+    /* Professional destructive red */
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    /* Softer borders for depth */
+    --border: 217 20% 88%;
+    --input: 217 20% 88%;
+    --ring: 160 84% 39%;
+
+    --radius: 0.5rem;
+
+    --sidebar-background: 220 18% 98%;
+    --sidebar-foreground: 222 47% 11%;
+    --sidebar-primary: 160 84% 39%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 217 20% 94%;
+    --sidebar-accent-foreground: 222 47% 11%;
+    --sidebar-border: 217 20% 88%;
+    --sidebar-ring: 160 84% 39%;
+    
+    /* Success and warning colors for medical context */
+    --success: 142 76% 36%;
+    --success-foreground: 0 0% 100%;
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 100%;
+    --info: 199 89% 48%;
+    --info-foreground: 0 0% 100%;
+  }
+
+  .dark {
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+
+    --primary: 160 84% 39%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 212.7 26.8% 83.9%;
+    --sidebar-background: 240 5.9% 10%;
+    --sidebar-foreground: 240 4.8% 95.9%;
+    --sidebar-primary: 160 84% 39%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 240 3.7% 15.9%;
+    --sidebar-accent-foreground: 240 4.8% 95.9%;
+    --sidebar-border: 240 3.7% 15.9%;
+    --sidebar-ring: 160 84% 39%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    letter-spacing: -0.011em;
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Poppins', 'Inter', sans-serif;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+  }
+  
+  /* Smooth cursor feedback on interactive elements */
+  button, a, [role="button"], input[type="checkbox"], input[type="radio"] {
+    cursor: pointer;
+  }
+}
+
+@layer utilities {
+  .micro-interaction {
+    @apply transition-all duration-150 ease-in-out;
+  }
+
+  .card-hover {
+    @apply hover:-translate-y-0.5 hover:shadow-sm transition-all duration-150;
+  }
+
+  .table-row-hover {
+    @apply hover:bg-muted/30 transition-colors duration-150;
+  }
+  
+  /* Premium hover lift effect */
+  .hover-lift {
+    @apply transition-all duration-150 ease-out;
+  }
+  
+  .hover-lift:hover {
+    @apply -translate-y-1 shadow-lg;
+  }
+  
+  /* Smooth focus states */
+  .focus-glow:focus {
+    @apply ring-2 ring-primary/20 border-primary/50;
+  }
+}
+
+@layer components {
+  /* Global smooth transitions for premium feel */
+  * {
+    @apply transition-colors duration-150;
+  }
+  
+  /* Enhanced depth layering */
+  .card-depth-1 {
+    @apply shadow-sm;
+  }
+  
+  .card-depth-2 {
+    @apply shadow-md;
+  }
+  
+  .card-depth-3 {
+    @apply shadow-lg;
+  }
+
+  /* Enterprise-grade card styling with depth */
+  .enterprise-card {
+    @apply border border-border/50 bg-card shadow-md transition-all duration-160;
+  }
+  
+  .enterprise-card:hover {
+    @apply shadow-xl -translate-y-1 border-border/80;
+  }
+
+  /* Premium typography hierarchy */
+  .title-primary {
+    @apply font-semibold tracking-tight;
+  }
+
+  .title-section {
+    @apply font-semibold tracking-tight;
+  }
+
+  .label-muted {
+    @apply text-muted-foreground/80 font-medium;
+  }
+
+  .value-prominent {
+    @apply font-bold tracking-tight;
+  }
+
+  /* Refined hover states with subtle elevation */
+  .btn-premium-hover {
+    @apply transition-all duration-150 hover:brightness-95 hover:shadow-sm;
+  }
+
+  .nav-link-transition {
+    @apply transition-all duration-150;
+  }
+
+  /* Enhanced table rows with smooth interaction */
+  .table-row-premium {
+    @apply transition-all duration-140 hover:bg-muted/40 hover:shadow-sm cursor-pointer;
+  }
+
+  /* Command center feeling */
+  .dashboard-metric {
+    @apply transition-all duration-160 hover:shadow-lg hover:-translate-y-1;
+  }
+  
+  /* Premium input focus with subtle glow */
+  .input-premium:focus {
+    @apply border-primary/50 ring-2 ring-primary/10 outline-none;
+  }
+  
+  /* Interactive card with depth */
+  .interactive-card {
+    @apply transition-all duration-160 cursor-pointer;
+  }
+  
+  .interactive-card:hover {
+    @apply -translate-y-1 shadow-lg;
+  }
+  
+  /* Smooth button interactions */
+  .btn-smooth {
+    @apply transition-all duration-150 active:scale-[0.98];
+  }
+  
+  /* Navigation item premium hover */
+  .nav-item-premium {
+    @apply transition-all duration-150 rounded-sm;
+  }
+  
+  .nav-item-premium:hover {
+    @apply bg-muted/30;
+  }
+}
