@@ -1,73 +1,94 @@
-# Welcome to your Lovable project
+# Medical Shop Management System
 
-## Project info
+A comprehensive pharmacy management system built with modern web technologies to streamline medical shop operations.
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+## Features
 
-## How can I edit this code?
+- **Inventory Management**: Track medicines, batches, and stock levels
+- **Sales & Billing**: Process sales with invoice generation
+- **Purchase Management**: Manage supplier orders and purchases
+- **Customer Management**: Maintain customer records and prescription requests
+- **Reports & Analytics**: View sales reports, expiry tracking, and dead stock analysis
+- **Stock Audit**: Conduct stock audits and track discrepancies
+- **User Management**: Role-based access control (Admin, Staff, User)
+- **Forecasting**: AI-powered demand prediction for inventory optimization
 
-There are several ways of editing your application.
+## Technologies
 
-**Use Lovable**
+### Frontend
+- React + TypeScript
+- Vite
+- Tailwind CSS
+- shadcn-ui components
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
+### Backend
+- Node.js + Express
+- MongoDB
+- Python (for ML predictions)
 
-Changes made via Lovable will be committed automatically to this repo.
+## Getting Started
 
-**Use your preferred IDE**
+### Prerequisites
+- Node.js & npm
+- MongoDB
+- Python 3.x (for prediction features)
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+### Installation
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
-
+1. Clone the repository:
 ```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+git clone https://github.com/krishnamoorthi-2005/MEDICAL-SHOP-MANAGEMENT.git
+cd medical-shop-management
+```
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+2. Install frontend dependencies:
+```sh
+npm install
+```
 
-# Step 3: Install the necessary dependencies.
-npm i
+3. Install backend dependencies:
+```sh
+cd backend
+npm install
+```
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
+4. Set up environment variables (create `.env` files as needed)
+
+5. Start MongoDB service
+
+6. Initialize the database:
+```sh
+cd backend
+node scripts/initDatabase.js
+```
+
+7. Start the backend server:
+```sh
+npm start
+```
+
+8. Start the frontend development server:
+```sh
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+## Project Structure
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+```
+medical-shop-management/
+├── backend/              # Express backend
+│   ├── controllers/      # Request handlers
+│   ├── models/          # MongoDB models
+│   ├── routes/          # API routes
+│   ├── prediction/      # ML prediction scripts
+│   └── middleware/      # Authentication & validation
+├── src/                 # React frontend
+│   ├── components/      # Reusable components
+│   ├── pages/          # Page components
+│   └── lib/            # Utilities
+└── public/             # Static assets
+```
 
-**Use GitHub Codespaces**
+## License
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
-
-## What technologies are used for this project?
-
-This project is built with:
-
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+This project is available for educational and commercial use.
