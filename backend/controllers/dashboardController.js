@@ -162,7 +162,11 @@ export const getDashboardAnalytics = async (req, res) => {
     const expiringSoonBatchCount = expiringSoonItems.reduce((sum, item) => sum + (item.batches || 0), 0);
 
     // === Ledger-based financial summary for today ===
-    const [salesByInvoice, expiredAgg, expiredInStockAgg] = await Promise.all([
+    // Get actual sales totals from Sale model to account for discounts/taxes
+    const [salesToday, stockLedgerCOGS, expiredAgg, expiredInStockAgg] = await Promise.all([
+      Sale.find({
+        createdAt: { $gte: startOfDay, $lte: endOfDay },
+      }).lean(),
       StockLedger.aggregate([
         {
           $match: {
@@ -173,14 +177,6 @@ export const getDashboardAnalytics = async (req, res) => {
         {
           $group: {
             _id: '$referenceId',
-            totalAmount: {
-              $sum: {
-                $multiply: [
-                  { $abs: '$quantity' },
-                  { $ifNull: ['$sellingPrice', 0] },
-                ],
-              },
-            },
             totalCostOfGoodsSold: {
               $sum: {
                 $multiply: [
@@ -229,17 +225,27 @@ export const getDashboardAnalytics = async (req, res) => {
       ]),
     ]);
 
-    const billCount = salesByInvoice.length;
-    const totalSales = salesByInvoice.reduce((sum, s) => sum + (s.totalAmount || 0), 0);
-    const totalCostOfGoodsSold = salesByInvoice.reduce((sum, s) => sum + (s.totalCostOfGoodsSold || 0), 0);
-    const itemsSold = salesByInvoice.reduce((sum, s) => sum + (s.itemsSold || 0), 0);
+    // Calculate totals from actual Sale records (includes discounts/taxes)
+    const billCount = salesToday.length;
+    const totalSales = salesToday.reduce((sum, s) => sum + (s.total || 0), 0);
+    const itemsSold = salesToday.reduce((sum, s) => {
+      return sum + (s.items?.reduce((itemSum, item) => itemSum + (item.quantity || 0), 0) || 0);
+    }, 0);
+
+    // Get COGS from ledger (actual purchase prices paid for items sold)
+    const cogsMap = new Map(
+      stockLedgerCOGS.map((c) => [c._id?.toString(), c.totalCostOfGoodsSold || 0])
+    );
+    const totalCostOfGoodsSold = salesToday.reduce((sum, sale) => {
+      return sum + (cogsMap.get(sale._id.toString()) || 0);
+    }, 0);
+
     const writtenOffLoss = expiredAgg[0]?.totalLoss || 0;
     const expiredInStockValue = expiredInStockAgg[0]?.totalExpiredValue || 0;
 
-    // Net profit should be based only on selling price
-    // and purchase price for items actually sold today.
-    // Do NOT subtract write-off losses here; those are
-    // already tracked separately in expiry analytics.
+    // Net profit = Actual revenue (after discounts/taxes) - Cost of goods sold
+    // This gives the true profit based on what customers actually paid
+    // vs what we paid to purchase those items
     const netProfit = totalSales - totalCostOfGoodsSold;
 
     // Expose the raw net profit value directly to the UI
@@ -247,11 +253,14 @@ export const getDashboardAnalytics = async (req, res) => {
     // negative values to zero.
     const displayProfit = netProfit;
 
-    console.log('📊 Dashboard Expiry Snapshot:', {
+    console.log('📊 Dashboard Financial Summary:', {
+      billCount,
+      totalSalesRevenue: totalSales.toFixed(2),
+      totalCOGS: totalCostOfGoodsSold.toFixed(2),
+      netProfit: netProfit.toFixed(2),
       writtenOffLossToday: writtenOffLoss,
       expiredInStockValue,
-      rawNetProfit: netProfit,
-      displayProfit,
+      itemsSold,
       expiredQtyInStock: expiredInStockAgg[0]?.totalExpiredQty || 0
     });
 

@@ -1,0 +1,101 @@
+MedicineName,Category,AvgMonthlySales,CurrentStock
+Alex,Cold/Cough,137,10
+Dolo 650,Fever,63,28
+Cough Syrup,Cold/Cough,35,50
+Omeprazole,Gastric,31,53
+Loratadine,Allergy,115,14
+Cough Syrup,Cold/Cough,89,31
+Dolo 650,Fever,56,27
+Paracetamol,Fever,113,38
+Cetirizine,Allergy,140,41
+Dolo 650,Fever,88,35
+Naproxen,Painkiller,84,33
+Naproxen,Painkiller,119,44
+Alex,Cold/Cough,30,52
+Glimepiride,Diabetes,38,50
+Alex,Cold/Cough,65,45
+Paracetamol,Fever,108,23
+Naproxen,Painkiller,127,24
+Loratadine,Allergy,88,53
+Azithromycin,Antibiotic,80,39
+Pantoprazole,Gastric,86,46
+Glimepiride,Diabetes,91,9
+Omeprazole,Gastric,46,11
+Naproxen,Painkiller,107,31
+Diclofenac,Painkiller,61,54
+Azithromycin,Antibiotic,65,51
+Paracetamol,Fever,105,52
+Cough Syrup,Cold/Cough,142,43
+Alex,Cold/Cough,131,57
+Ranitidine,Gastric,87,9
+Cough Syrup,Cold/Cough,147,22
+Amoxicillin,Antibiotic,94,21
+Alex,Cold/Cough,65,27
+Ranitidine,Gastric,61,47
+Ranitidine,Gastric,107,58
+Dolo 650,Fever,68,58
+Metformin,Diabetes,96,49
+Glimepiride,Diabetes,149,7
+Aceclofenac,Painkiller,73,51
+Omeprazole,Gastric,88,5
+Dolo 650,Fever,133,32
+Metformin,Diabetes,125,28
+Cetirizine,Allergy,96,26
+Ascoril,Cold/Cough,106,21
+Ascoril,Cold/Cough,84,44
+Diclofenac,Painkiller,82,49
+Aceclofenac,Painkiller,82,44
+Cough Syrup,Cold/Cough,69,48
+Azithromycin,Antibiotic,64,20
+Paracetamol,Fever,77,50
+Glimepiride,Diabetes,150,21
+Diclofenac,Painkiller,49,44
+Cefixime,Antibiotic,102,44
+Amoxicillin,Antibiotic,85,21
+Diclofenac,Painkiller,134,58
+Omeprazole,Gastric,143,13
+Pantoprazole,Gastric,99,40
+Glimepiride,Diabetes,124,32
+Azithromycin,Antibiotic,68,43
+Metformin,Diabetes,130,11
+Azithromycin,Antibiotic,122,40
+Alex,Cold/Cough,34,9
+Amoxicillin,Antibiotic,92,20
+Paracetamol,Fever,119,32
+Paracetamol,Fever,119,42
+Aceclofenac,Painkiller,54,53
+Paracetamol,Fever,90,19
+Ibuprofen,Fever,100,31
+Dolo 650,Fever,123,13
+Loratadine,Allergy,134,16
+Ascoril,Cold/Cough,141,32
+Dolo 650,Fever,108,46
+Dolo 650,Fever,43,25
+Loratadine,Allergy,59,22
+Levocetirizine,Allergy,131,60
+Paracetamol,Fever,49,24
+Pantoprazole,Gastric,130,34
+Diclofenac,Painkiller,121,11
+Omeprazole,Gastric,107,60
+Cetirizine,Allergy,87,60
+Cetirizine,Allergy,148,42
+Cefixime,Antibiotic,115,15
+Cetirizine,Allergy,30,35
+Azithromycin,Antibiotic,145,45
+Dolo 650,Fever,121,15
+Ibuprofen,Fever,63,9
+Ibuprofen,Fever,135,21
+Naproxen,Painkiller,93,49
+Amoxicillin,Antibiotic,30,46
+Loratadine,Allergy,77,32
+Metformin,Diabetes,40,25
+Naproxen,Painkiller,38,56
+Naproxen,Painkiller,136,49
+Insulin,Diabetes,34,58
+Aceclofenac,Painkiller,122,15
+Paracetamol,Fever,107,40
+Aceclofenac,Painkiller,84,59
+Cefixime,Antibiotic,75,32
+Cefixime,Antibiotic,122,30
+Glimepiride,Diabetes,119,47
+Glimepiride,Diabetes,131,15

@@ -240,13 +240,16 @@ export default function SubmitPrescription() {
                                     <span className="text-xs text-slate-400">JPG, PNG or PDF • max 5MB</span>
                                 </button>
                             )}
+                            <p className="text-xs text-slate-400 mt-2 flex items-center gap-1">
+                                🔒 Your image is processed for text extraction and not stored on our servers.
+                            </p>
                         </div>
 
                         {/* Safety notice */}
                         <div className="flex items-start gap-3 p-4 rounded-2xl bg-blue-50 border border-blue-200">
                             <span className="text-xl">ℹ️</span>
                             <p className="text-xs text-blue-700 leading-relaxed font-medium">
-                                <strong>How it works:</strong> Upload your prescription image. Our pharmacist will review it and let you know which medicines are available. You'll be notified once your medicines are ready for pickup.
+                                <strong>How it works:</strong> Upload your prescription image. Our system automatically reads the text from your prescription and securely stores only the text — the original image is never saved. Our pharmacist will then review and let you know which medicines are available for pickup.
                             </p>
                         </div>
 

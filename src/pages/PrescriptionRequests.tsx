@@ -1,9 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
     ClipboardList, Search, CheckCircle, XCircle, Clock, Eye,
-    RefreshCw, ChevronDown, FileText, Phone, User, Pill,
-    AlertTriangle, X, MessageSquare, Calendar, Filter,
-    CheckCheck, Loader2, Image as ImageIcon, Maximize2, Trash2
+    RefreshCw, FileText, Phone, Pill,
+    AlertTriangle, X, MessageSquare,
+    CheckCheck, Loader2, Trash2, ScanText
 } from 'lucide-react';
 import {
     listPrescriptions, updatePrescriptionStatus, deletePrescription,
@@ -19,7 +19,6 @@ import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
-const UPLOADS_BASE = API_BASE.replace('/api', '/uploads');
 
 /* ── status helpers ─────────────────────────────────────── */
 const STATUS = {
@@ -51,7 +50,6 @@ export default function PrescriptionRequests() {
     const [selected, setSelected] = useState<PrescriptionRequest | null>(null);
     const [adminNotes, setAdminNotes] = useState('');
     const [updating, setUpdating] = useState(false);
-    const [showImageModal, setShowImageModal] = useState(false);
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
     const [deleting, setDeleting] = useState(false);
 
@@ -187,9 +185,14 @@ export default function PrescriptionRequests() {
                                             <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ color: st.color, background: st.bg }}>
                                                 {st.label}
                                             </span>
-                                            {r.prescriptionImage && (
+                                            {r.extractedText && (
                                                 <span className="flex items-center gap-0.5 text-[10px] font-bold text-indigo-500 bg-indigo-50 px-2 py-0.5 rounded-full">
-                                                    <ImageIcon className="h-2.5 w-2.5" /> Image
+                                                    <ScanText className="h-2.5 w-2.5" /> OCR Text
+                                                </span>
+                                            )}
+                                            {r.ocrStatus === 'failed' && (
+                                                <span className="flex items-center gap-0.5 text-[10px] font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full">
+                                                    <AlertTriangle className="h-2.5 w-2.5" /> OCR Failed
                                                 </span>
                                             )}
                                         </div>
@@ -272,49 +275,34 @@ export default function PrescriptionRequests() {
                             </div>
                         )}
 
-                        {/* Prescription image */}
-                        {selected.prescriptionImage && (
-                            <div>
-                                <div className="text-xs font-extrabold text-slate-500 uppercase tracking-widest mb-2 flex items-center gap-2">
-                                    <ImageIcon className="h-3.5 w-3.5 text-indigo-400" /> Prescription Image
-                                </div>
-                                <div className="space-y-2">
-                                    <div 
-                                        onClick={(e) => {
-                                            e.preventDefault();
-                                            e.stopPropagation();
-                                            console.log('Image clicked, opening modal', showImageModal);
-                                            setShowImageModal(true);
-                                        }}
-                                        className="relative group cursor-pointer rounded-2xl overflow-hidden border-2 border-slate-200 hover:border-indigo-400 transition-all"
-                                    >
-                                        <img
-                                            src={`${UPLOADS_BASE}/${selected.prescriptionImage}`}
-                                            alt="Prescription"
-                                            className="w-full object-cover max-h-48 group-hover:brightness-95 transition-all pointer-events-none"
-                                            onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
-                                        />
-                                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-all flex items-center justify-center pointer-events-none">
-                                            <div className="opacity-0 group-hover:opacity-100 transition-opacity bg-white px-4 py-2 rounded-lg shadow-lg flex items-center gap-2">
-                                                <Maximize2 className="h-4 w-4 text-indigo-600" />
-                                                <span className="text-sm font-bold text-slate-800">Click to view full size</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <button
-                                        onClick={(e) => {
-                                            e.preventDefault();
-                                            console.log('Button clicked, modal state:', showImageModal);
-                                            setShowImageModal(true);
-                                        }}
-                                        className="w-full px-3 py-2 text-sm font-medium text-indigo-600 bg-indigo-50 rounded-lg hover:bg-indigo-100 transition-colors flex items-center justify-center gap-2"
-                                    >
-                                        <Maximize2 className="h-4 w-4" />
-                                        View Full Size
-                                    </button>
-                                </div>
+                        {/* OCR Extracted Text */}
+                        <div>
+                            <div className="text-xs font-extrabold text-slate-500 uppercase tracking-widest mb-2 flex items-center gap-2">
+                                <ScanText className="h-3.5 w-3.5 text-indigo-400" /> Prescription Text (OCR Extracted)
                             </div>
-                        )}
+                            {selected.ocrStatus === 'done' && selected.extractedText ? (
+                                <div className="p-4 rounded-2xl border-2 border-indigo-100 bg-indigo-50/50">
+                                    <pre className="text-xs text-slate-700 font-mono whitespace-pre-wrap leading-relaxed">
+                                        {selected.extractedText}
+                                    </pre>
+                                </div>
+                            ) : selected.ocrStatus === 'failed' ? (
+                                <div className="flex items-start gap-3 p-4 rounded-xl bg-amber-50 border border-amber-200">
+                                    <AlertTriangle className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
+                                    <div>
+                                        <div className="text-sm font-bold text-amber-800 mb-1">OCR extraction failed</div>
+                                        <p className="text-xs text-amber-700 leading-relaxed">
+                                            Could not extract text from the uploaded prescription image.
+                                        </p>
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="flex items-start gap-3 p-4 rounded-xl bg-slate-50 border border-slate-200">
+                                    <ScanText className="h-5 w-5 text-slate-400 flex-shrink-0 mt-0.5" />
+                                    <p className="text-xs text-slate-500">No prescription text available.</p>
+                                </div>
+                            )}
+                        </div>
 
                         {/* Doctor info */}
                         {selected.doctorName && (
@@ -386,45 +374,6 @@ export default function PrescriptionRequests() {
                 </div>
             )}
         </div>
-
-        {/* Image Modal */}
-        {selected?.prescriptionImage && (
-            <Dialog open={showImageModal} onOpenChange={(open) => {
-                console.log('Dialog state changing to:', open);
-                setShowImageModal(open);
-            }}>
-                <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden bg-white">
-                    <DialogHeader className="pb-4">
-                        <DialogTitle className="flex items-center gap-2 text-lg">
-                            <ImageIcon className="h-5 w-5 text-indigo-500" />
-                            Prescription Image - Full Size
-                        </DialogTitle>
-                    </DialogHeader>
-                    <div className="overflow-auto max-h-[calc(90vh-120px)]">
-                        <div className="relative p-4">
-                            <img
-                                src={`${UPLOADS_BASE}/${selected.prescriptionImage}`}
-                                alt="Prescription Full Size"
-                                className="w-full h-auto rounded-lg border border-slate-200 shadow-lg"
-                                onError={(e) => { 
-                                    console.error('Image load error');
-                                    (e.target as HTMLImageElement).alt = 'Failed to load image'; 
-                                }}
-                            />
-                            <a 
-                                href={`${UPLOADS_BASE}/${selected.prescriptionImage}`} 
-                                target="_blank" 
-                                rel="noopener noreferrer"
-                                className="absolute top-6 right-6 bg-white px-4 py-2 rounded-lg shadow-lg text-sm font-bold text-indigo-600 hover:bg-indigo-50 transition-colors flex items-center gap-2 border border-indigo-200"
-                            >
-                                <Maximize2 className="h-4 w-4" />
-                                Open in New Tab
-                            </a>
-                        </div>
-                    </div>
-                </DialogContent>
-            </Dialog>
-        )}
 
         {/* Delete Confirmation Dialog */}
         <Dialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>

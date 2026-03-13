@@ -1374,6 +1374,8 @@ export interface PrescriptionRequest {
     notes?: string;
   }>;
   prescriptionImage?: string;
+  extractedText?: string;
+  ocrStatus?: 'pending' | 'done' | 'failed' | 'none';
   doctorName?: string;
   doctorPhone?: string;
   status: 'pending' | 'under_review' | 'approved' | 'rejected' | 'collected';

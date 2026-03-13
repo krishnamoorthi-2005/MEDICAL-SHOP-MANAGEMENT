@@ -16,8 +16,12 @@ const prescriptionRequestSchema = new mongoose.Schema({
     notes: { type: String, default: '' },
   }],
 
-  // Prescription image (stored as filename after upload)
+  // Prescription image filename (cleared after OCR extraction)
   prescriptionImage: { type: String, default: null },
+
+  // OCR extracted text from prescription image (replaces storing the image)
+  extractedText: { type: String, default: '' },
+  ocrStatus: { type: String, enum: ['pending', 'done', 'failed', 'none'], default: 'none' },
 
   // Doctor details (optional)
   doctorName: { type: String, default: '' },

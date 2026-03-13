@@ -1,6 +1,25 @@
 import PrescriptionRequest from '../models/PrescriptionRequest.js';
 import path from 'path';
 import fs from 'fs';
+import { createWorker } from 'tesseract.js';
+
+/* ── OCR helper: extract text then delete image ────────── */
+async function extractTextAndDeleteImage(filename) {
+  const imgPath = path.join(process.cwd(), 'uploads', filename);
+  try {
+    const worker = await createWorker('eng');
+    const { data: { text } } = await worker.recognize(imgPath);
+    await worker.terminate();
+    // Delete the image after successful extraction
+    if (fs.existsSync(imgPath)) fs.unlinkSync(imgPath);
+    return { text: text.trim(), status: 'done' };
+  } catch (ocrErr) {
+    console.error('[OCR] Failed:', ocrErr.message);
+    // Still delete the image even if OCR failed to save space
+    if (fs.existsSync(imgPath)) fs.unlinkSync(imgPath);
+    return { text: '', status: 'failed' };
+  }
+}
 
 /* ── GET /api/prescriptions — Admin: list all ──────────── */
 export const listPrescriptions = async (req, res) => {
@@ -48,9 +67,9 @@ export const createPrescription = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Patient name and phone are required' });
     }
 
-    const prescriptionImage = req.file ? req.file.filename : null;
+    const uploadedFilename = req.file ? req.file.filename : null;
 
-    if (!prescriptionImage) {
+    if (!uploadedFilename) {
       return res.status(400).json({ success: false, message: 'Prescription image is required' });
     }
 
@@ -59,17 +78,21 @@ export const createPrescription = async (req, res) => {
       try { parsedMedicines = JSON.parse(medicines); } catch { parsedMedicines = []; }
     }
 
-    // Medicines are now optional - admin will identify from prescription image
     if (!parsedMedicines || !Array.isArray(parsedMedicines)) {
       parsedMedicines = [];
     }
+
+    // Run OCR and delete image immediately — no image stored in DB
+    const { text: extractedText, status: ocrStatus } = await extractTextAndDeleteImage(uploadedFilename);
 
     const request = new PrescriptionRequest({
       patientName,
       patientPhone,
       patientEmail: patientEmail || '',
       medicines: parsedMedicines,
-      prescriptionImage,
+      prescriptionImage: null,       // image is not kept
+      extractedText,
+      ocrStatus,
       doctorName: doctorName || '',
       doctorPhone: doctorPhone || '',
     });
@@ -135,7 +158,7 @@ export const deletePrescription = async (req, res) => {
     const pr = await PrescriptionRequest.findById(req.params.id);
     if (!pr) return res.status(404).json({ success: false, message: 'Not found' });
 
-    // Delete uploaded image if exists
+    // Clean up image file if it somehow still exists
     if (pr.prescriptionImage) {
       const imgPath = path.join(process.cwd(), 'uploads', pr.prescriptionImage);
       if (fs.existsSync(imgPath)) fs.unlinkSync(imgPath);
