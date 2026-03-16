@@ -17,6 +17,7 @@ import predictionRoutes from './routes/predictionRoutes.js';
 import prescriptionRoutes from './routes/prescriptionRoutes.js';
 import callRequestRoutes from './routes/callRequestRoutes.js';
 import customerRoutes from './routes/customerRoutes.js';
+import { startTelegramInventoryAlertScheduler } from './controllers/dashboardController.js';
 
 dotenv.config();
 
@@ -95,4 +96,5 @@ app.listen(PORT, () => {
   console.log(`🚀 Backend server running on http://localhost:${PORT}`);
   console.log(`📊 API endpoint: http://localhost:${PORT}/api`);
   console.log(`💚 Health check: http://localhost:${PORT}/api/health`);
+  startTelegramInventoryAlertScheduler();
 });

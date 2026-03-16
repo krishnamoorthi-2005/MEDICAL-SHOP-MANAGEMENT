@@ -93,6 +93,40 @@ Password: admin123
 2. Implement billing API with FEFO logic
 3. Connect frontend to backend
 
+## Telegram Stock Alerts (Optional)
+
+You can send Telegram alerts for:
+- Low stock
+- Expiring soon (next 30 days)
+- Already expired but still in stock
+
+### 1. Add env values in backend `.env`
+
+```
+TELEGRAM_BOT_TOKEN=your_bot_token
+TELEGRAM_CHAT_ID=your_chat_id
+TELEGRAM_ALERT_ENABLED=true
+TELEGRAM_ALERT_INTERVAL_MINUTES=30
+```
+
+Notes:
+- `TELEGRAM_ALERT_ENABLED=true` enables automatic scheduled alerts.
+- If scheduler is enabled, alerts are sent only when inventory alert content changes.
+
+### 2. Trigger manually (authenticated)
+
+```
+POST /api/sales/analytics/alerts/telegram
+Content-Type: application/json
+
+{
+  "limit": 15,
+  "sendWhenEmpty": false
+}
+```
+
+Manual trigger returns current alert data and sends a Telegram message.
+
 ## Database Name
 
 **pharmacy_system**

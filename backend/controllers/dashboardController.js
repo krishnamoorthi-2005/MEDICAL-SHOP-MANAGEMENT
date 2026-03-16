@@ -2,12 +2,171 @@ import Sale from '../models/Sale.js';
 import Medicine from '../models/Medicine.js';
 import Batch from '../models/Batch.js';
 import StockLedger from '../models/StockLedger.js';
+import { isTelegramConfigured, sendTelegramMessage } from '../utils/telegramNotifier.js';
 
 const toLocalDateString = (date) => {
   const yyyy = date.getFullYear();
   const mm = String(date.getMonth() + 1).padStart(2, '0');
   const dd = String(date.getDate()).padStart(2, '0');
   return `${yyyy}-${mm}-${dd}`;
+};
+
+const toDisplayDate = (value) => {
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) {
+    return 'N/A';
+  }
+  return toLocalDateString(d);
+};
+
+const buildInventoryAlertData = async ({ limit = 10 } = {}) => {
+  const now = new Date();
+  const thirtyDaysFromNow = new Date(now);
+  thirtyDaysFromNow.setDate(thirtyDaysFromNow.getDate() + 30);
+
+  const medicines = await Medicine.find({ discontinued: { $ne: true } }).lean();
+  const lowStockItems = [];
+  const expiringSoonItems = [];
+  const expiredItems = [];
+
+  for (const med of medicines) {
+    const batches = await Batch.find({ medicineId: med._id }).lean();
+    if (batches.length === 0) {
+      continue;
+    }
+
+    const batchIds = batches.map((b) => b._id);
+    const stockAgg = await StockLedger.aggregate([
+      { $match: { medicineId: med._id, batchId: { $in: batchIds } } },
+      { $group: { _id: '$batchId', quantity: { $sum: '$quantity' } } },
+    ]);
+
+    const balanceMap = new Map(stockAgg.map((s) => [s._id.toString(), s.quantity || 0]));
+    const totalStock = batches.reduce(
+      (sum, b) => sum + (balanceMap.get(b._id.toString()) || 0),
+      0,
+    );
+
+    const minStockLevel = med.minStockLevel ?? 0;
+    if (minStockLevel > 0 && totalStock < minStockLevel) {
+      lowStockItems.push({
+        name: med.name,
+        stock: totalStock,
+        minStockLevel,
+      });
+    }
+
+    const expiringBatches = batches.filter((b) => {
+      const qty = balanceMap.get(b._id.toString()) || 0;
+      const expiry = new Date(b.expiryDate);
+      return expiry <= thirtyDaysFromNow && expiry >= now && qty > 0;
+    });
+
+    if (expiringBatches.length > 0) {
+      const expiringValue = expiringBatches.reduce((sum, b) => {
+        const qty = balanceMap.get(b._id.toString()) || 0;
+        return sum + qty * (b.mrp || 0);
+      }, 0);
+
+      const nextExpiry = expiringBatches.reduce(
+        (min, b) => (new Date(b.expiryDate) < new Date(min.expiryDate) ? b : min),
+        expiringBatches[0],
+      );
+
+      expiringSoonItems.push({
+        name: med.name,
+        value: expiringValue,
+        batches: expiringBatches.length,
+        nextExpiryDate: nextExpiry.expiryDate,
+      });
+    }
+
+    const expiredBatches = batches.filter((b) => {
+      const qty = balanceMap.get(b._id.toString()) || 0;
+      return new Date(b.expiryDate) < now && qty > 0;
+    });
+
+    if (expiredBatches.length > 0) {
+      const expiredValue = expiredBatches.reduce((sum, b) => {
+        const qty = balanceMap.get(b._id.toString()) || 0;
+        return sum + qty * (b.mrp || 0);
+      }, 0);
+
+      const expiredQty = expiredBatches.reduce(
+        (sum, b) => sum + (balanceMap.get(b._id.toString()) || 0),
+        0,
+      );
+
+      const oldestExpired = expiredBatches.reduce(
+        (min, b) => (new Date(b.expiryDate) < new Date(min.expiryDate) ? b : min),
+        expiredBatches[0],
+      );
+
+      expiredItems.push({
+        name: med.name,
+        value: expiredValue,
+        quantity: expiredQty,
+        batches: expiredBatches.length,
+        oldestExpiryDate: oldestExpired.expiryDate,
+      });
+    }
+  }
+
+  const sortByName = (a, b) => String(a.name || '').localeCompare(String(b.name || ''));
+  lowStockItems.sort((a, b) => (a.stock - b.stock) || sortByName(a, b));
+  expiringSoonItems.sort((a, b) => new Date(a.nextExpiryDate) - new Date(b.nextExpiryDate));
+  expiredItems.sort((a, b) => new Date(a.oldestExpiryDate) - new Date(b.oldestExpiryDate));
+
+  return {
+    lowStockCount: lowStockItems.length,
+    lowStockItems: lowStockItems.slice(0, limit),
+    expiringSoonCount: expiringSoonItems.length,
+    expiringSoonBatchCount: expiringSoonItems.reduce((sum, item) => sum + (item.batches || 0), 0),
+    expiringSoonValue: expiringSoonItems.reduce((sum, item) => sum + (item.value || 0), 0),
+    expiringSoonItems: expiringSoonItems.slice(0, limit),
+    expiredCount: expiredItems.length,
+    expiredBatchCount: expiredItems.reduce((sum, item) => sum + (item.batches || 0), 0),
+    expiredValue: expiredItems.reduce((sum, item) => sum + (item.value || 0), 0),
+    expiredItems: expiredItems.slice(0, limit),
+  };
+};
+
+const formatTelegramInventoryAlertMessage = (alertData) => {
+  const lines = [
+    'Pharmacy Inventory Alerts',
+    '',
+  ];
+
+  if (alertData.expiredCount > 0) {
+    lines.push(`🔴 Expired in stock (${alertData.expiredCount})`);
+    alertData.expiredItems.slice(0, 10).forEach((item) => {
+      lines.push(`• ${item.name} | Qty: ${item.quantity} | Batches: ${item.batches} | Oldest expiry: ${toDisplayDate(item.oldestExpiryDate)}`);
+    });
+    lines.push('');
+  }
+
+  if (alertData.expiringSoonCount > 0) {
+    lines.push(`🟠 Expiring soon (${alertData.expiringSoonCount})`);
+    alertData.expiringSoonItems.slice(0, 10).forEach((item) => {
+      lines.push(`• ${item.name} | Batches: ${item.batches} | Next expiry: ${toDisplayDate(item.nextExpiryDate)}`);
+    });
+    lines.push('');
+  }
+
+  if (alertData.lowStockCount > 0) {
+    lines.push(`🟡 Low stock (${alertData.lowStockCount})`);
+    alertData.lowStockItems.slice(0, 10).forEach((item) => {
+      lines.push(`• ${item.name} | Stock: ${item.stock} | Min: ${item.minStockLevel}`);
+    });
+    lines.push('');
+  }
+
+  if (alertData.lowStockCount === 0 && alertData.expiringSoonCount === 0 && alertData.expiredCount === 0) {
+    lines.push('✅ No low stock, expiring, or expired alerts right now.');
+  }
+
+  lines.push(`Updated: ${new Date().toLocaleString('en-IN')}`);
+  return lines.join('\n').trim();
 };
 
 // GET DASHBOARD ANALYTICS
@@ -18,59 +177,7 @@ export const getDashboardAnalytics = async (req, res) => {
     const startOfDay = new Date(today);
     const endOfDay = new Date(today);
     endOfDay.setHours(23, 59, 59, 999);
-
-    // Get low stock items (stock < minStockLevel) from ledger
-    const medicines = await Medicine.find().lean();
-    const lowStockItems = [];
-    const expiringSoonItems = [];
-    
-    const thirtyDaysFromNow = new Date();
-    thirtyDaysFromNow.setDate(thirtyDaysFromNow.getDate() + 30);
-
-    for (const med of medicines) {
-      if (med.discontinued) {
-        continue;
-      }
-
-      const batches = await Batch.find({ medicineId: med._id }).lean();
-      const batchIds = batches.map((b) => b._id);
-      const stockAgg = await StockLedger.aggregate([
-        { $match: { medicineId: med._id, batchId: { $in: batchIds } } },
-        { $group: { _id: '$batchId', quantity: { $sum: '$quantity' } } },
-      ]);
-      const balanceMap = new Map(stockAgg.map((s) => [s._id.toString(), s.quantity || 0]));
-      const totalStock = batches.reduce(
-        (sum, b) => sum + (balanceMap.get(b._id.toString()) || 0),
-        0,
-      );
-
-      const minStockLevel = med.minStockLevel ?? 0;
-      if (minStockLevel > 0 && totalStock < minStockLevel) {
-        lowStockItems.push({ name: med.name, stock: totalStock });
-      }
-
-      // Check for expiring batches
-      const expiringBatches = batches.filter((b) => {
-        const qty = balanceMap.get(b._id.toString()) || 0;
-        return (
-          new Date(b.expiryDate) < thirtyDaysFromNow &&
-          new Date(b.expiryDate) > new Date() &&
-          qty > 0
-        );
-      });
-
-      if (expiringBatches.length > 0) {
-        const expiringValue = expiringBatches.reduce((sum, b) => {
-          const qty = balanceMap.get(b._id.toString()) || 0;
-          return sum + qty * (b.mrp || 0);
-        }, 0);
-        expiringSoonItems.push({ 
-          name: med.name, 
-          value: expiringValue,
-          batches: expiringBatches.length 
-        });
-      }
-    }
+    const alertData = await buildInventoryAlertData({ limit: 10 });
 
     // Get top selling items (last 7 days)
     const sevenDaysAgo = new Date();
@@ -156,10 +263,6 @@ export const getDashboardAnalytics = async (req, res) => {
         sales: trendMap.get(dateString) || 0,
       });
     }
-
-    const totalExpiringValue = expiringSoonItems.reduce((sum, item) => sum + item.value, 0);
-    const expiringSoonCount = expiringSoonItems.length;
-    const expiringSoonBatchCount = expiringSoonItems.reduce((sum, item) => sum + (item.batches || 0), 0);
 
     // === Ledger-based financial summary for today ===
     // Get actual sales totals from Sale model to account for discounts/taxes
@@ -278,12 +381,16 @@ export const getDashboardAnalytics = async (req, res) => {
       success: true,
       data: {
         todaySummary,
-        lowStockCount: lowStockItems.length,
-        lowStockItems: lowStockItems.slice(0, 10), // Return top 10 low stock items
-        expiringSoonCount,
-        expiringSoonBatchCount,
-        expiringSoonValue: totalExpiringValue,
-        expiringSoonItems: expiringSoonItems.slice(0, 10), // Return top 10 expiring items
+        lowStockCount: alertData.lowStockCount,
+        lowStockItems: alertData.lowStockItems,
+        expiringSoonCount: alertData.expiringSoonCount,
+        expiringSoonBatchCount: alertData.expiringSoonBatchCount,
+        expiringSoonValue: alertData.expiringSoonValue,
+        expiringSoonItems: alertData.expiringSoonItems,
+        expiredCount: alertData.expiredCount,
+        expiredBatchCount: alertData.expiredBatchCount,
+        expiredValue: alertData.expiredValue,
+        expiredItems: alertData.expiredItems,
         topSellingItems: topItems,
         recentTransactions: recentTransactions.map(t => ({
           invoiceNumber: t.invoiceNumber,
@@ -301,6 +408,100 @@ export const getDashboardAnalytics = async (req, res) => {
       message: error.message
     });
   }
+};
+
+export const sendTelegramInventoryAlerts = async (req, res) => {
+  try {
+    if (!isTelegramConfigured()) {
+      return res.status(400).json({
+        success: false,
+        message: 'Telegram is not configured. Set TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID in backend .env',
+      });
+    }
+
+    const limit = Number(req.body?.limit) > 0 ? Number(req.body.limit) : 15;
+    const sendWhenEmpty = req.body?.sendWhenEmpty === true;
+    const alertData = await buildInventoryAlertData({ limit });
+
+    const hasAlerts = alertData.lowStockCount > 0 || alertData.expiringSoonCount > 0 || alertData.expiredCount > 0;
+    if (!hasAlerts && !sendWhenEmpty) {
+      return res.json({
+        success: true,
+        message: 'No alert to send right now',
+        data: alertData,
+      });
+    }
+
+    const message = formatTelegramInventoryAlertMessage(alertData);
+    await sendTelegramMessage(message);
+
+    return res.json({
+      success: true,
+      message: 'Telegram inventory alert sent successfully',
+      data: alertData,
+    });
+  } catch (error) {
+    console.error('❌ Telegram inventory alert error:', error);
+    return res.status(500).json({
+      success: false,
+      message: error.message || 'Failed to send Telegram alert',
+    });
+  }
+};
+
+let telegramAlertIntervalHandle = null;
+
+export const startTelegramInventoryAlertScheduler = () => {
+  const enabled = String(process.env.TELEGRAM_ALERT_ENABLED || '').toLowerCase() === 'true';
+  if (!enabled) {
+    return;
+  }
+
+  if (!isTelegramConfigured()) {
+    console.warn('⚠️ Telegram alert scheduler is enabled but token/chat id is missing');
+    return;
+  }
+
+  const intervalMinutes = Number(process.env.TELEGRAM_ALERT_INTERVAL_MINUTES || 30);
+  const intervalMs = Math.max(1, intervalMinutes) * 60 * 1000;
+  let lastDigest = '';
+
+  const run = async () => {
+    try {
+      const alertData = await buildInventoryAlertData({ limit: 10 });
+      const hasAlerts = alertData.lowStockCount > 0 || alertData.expiringSoonCount > 0 || alertData.expiredCount > 0;
+      if (!hasAlerts) {
+        lastDigest = '';
+        return;
+      }
+
+      const digest = JSON.stringify({
+        lowStockCount: alertData.lowStockCount,
+        expiringSoonCount: alertData.expiringSoonCount,
+        expiredCount: alertData.expiredCount,
+        lowStockItems: alertData.lowStockItems.map((i) => `${i.name}:${i.stock}`).join('|'),
+        expiringSoonItems: alertData.expiringSoonItems.map((i) => `${i.name}:${i.batches}`).join('|'),
+        expiredItems: alertData.expiredItems.map((i) => `${i.name}:${i.quantity}`).join('|'),
+      });
+
+      if (digest === lastDigest) {
+        return;
+      }
+
+      await sendTelegramMessage(formatTelegramInventoryAlertMessage(alertData));
+      lastDigest = digest;
+    } catch (error) {
+      console.error('❌ Telegram alert scheduler run failed:', error.message);
+    }
+  };
+
+  if (telegramAlertIntervalHandle) {
+    clearInterval(telegramAlertIntervalHandle);
+  }
+
+  telegramAlertIntervalHandle = setInterval(run, intervalMs);
+  run();
+  console.log(`🤖 Telegram alert scheduler started (every ${Math.max(1, intervalMinutes)} minute(s))`);
 };
 
 // Get frequently purchased items (for quick billing)

@@ -4,7 +4,7 @@ import {
   LayoutDashboard, Receipt, Package, ShoppingCart,
   ClipboardCheck, BarChart3, Settings, Search, Bell,
   Plus, ChevronDown, User, LogOut, Activity, Menu, X,
-  Sparkles, Users, ClipboardList, AlertTriangle, Clock
+  Sparkles, Users, ClipboardList, AlertTriangle, Clock, AlertOctagon
 } from 'lucide-react';
 import { getPrescriptionPendingCount, getDashboardAnalytics } from '@/lib/api';
 import { Button } from '@/components/ui/button';
@@ -33,7 +33,7 @@ interface AdminLayoutProps {
 }
 
 interface Notification {
-  type: 'low-stock' | 'expiring';
+  type: 'low-stock' | 'expiring' | 'expired';
   message: string;
   icon: any;
   link?: string;
@@ -78,6 +78,18 @@ export function AdminLayout({ children }: AdminLayoutProps) {
               type: 'expiring',
               message: `${item.name} - ${item.batches} batch(es) expiring soon`,
               icon: Clock,
+              link: '/inventory'
+            });
+          });
+        }
+
+        // Add expired notifications
+        if (data.expiredItems && data.expiredItems.length > 0) {
+          data.expiredItems.forEach((item: any) => {
+            notifs.push({
+              type: 'expired',
+              message: `${item.name} - ${item.quantity} unit(s) already expired`,
+              icon: AlertOctagon,
               link: '/inventory'
             });
           });
@@ -319,14 +331,22 @@ export function AdminLayout({ children }: AdminLayoutProps) {
                         <DropdownMenuItem className="flex items-start gap-3 p-3 cursor-pointer">
                           <div className={cn(
                             "flex h-8 w-8 items-center justify-center rounded-lg flex-shrink-0",
-                            notif.type === 'low-stock' ? 'bg-amber-100 text-amber-600' : 'bg-blue-100 text-blue-600'
+                            notif.type === 'low-stock'
+                              ? 'bg-amber-100 text-amber-600'
+                              : notif.type === 'expiring'
+                              ? 'bg-blue-100 text-blue-600'
+                              : 'bg-red-100 text-red-600'
                           )}>
                             <Icon className="h-4 w-4" />
                           </div>
                           <div className="flex-1 min-w-0">
                             <p className="text-sm font-medium leading-snug">{notif.message}</p>
                             <p className="text-xs text-muted-foreground mt-0.5">
-                              {notif.type === 'low-stock' ? 'Low Stock Alert' : 'Expiring Soon'}
+                              {notif.type === 'low-stock'
+                                ? 'Low Stock Alert'
+                                : notif.type === 'expiring'
+                                ? 'Expiring Soon'
+                                : 'Expired Product Alert'}
                             </p>
                           </div>
                         </DropdownMenuItem>

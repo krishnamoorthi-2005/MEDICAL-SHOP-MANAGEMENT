@@ -84,6 +84,7 @@ export const getTodaySummary = async (): Promise<DailySummary> => {
 
   if (!response.ok) {
     await handleAuthError(response, 'Failed to fetch summary');
+    throw new Error('Failed to fetch summary');
   }
 
   const result = await response.json();
@@ -98,6 +99,7 @@ export const searchMedicines = async (query: string) => {
 
   if (!response.ok) {
     await handleAuthError(response, 'Failed to search medicines');
+    throw new Error('Failed to search medicines');
   }
 
   const result = await response.json();
@@ -125,6 +127,7 @@ export const getMedicines = async () => {
 
   if (!response.ok) {
     await handleAuthError(response, 'Failed to fetch medicines');
+    throw new Error('Failed to fetch medicines');
   }
 
   const result = await response.json();
@@ -139,10 +142,26 @@ export const getDashboardAnalytics = async () => {
 
   if (!response.ok) {
     await handleAuthError(response, 'Failed to fetch dashboard analytics');
+    throw new Error('Failed to fetch dashboard analytics');
   }
 
   const result = await response.json();
   return result.data;
+};
+
+export const sendTelegramInventoryAlerts = async (payload?: { limit?: number; sendWhenEmpty?: boolean }) => {
+  const response = await fetch(`${API_BASE_URL}/sales/analytics/alerts/telegram`, {
+    method: 'POST',
+    headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
+    body: JSON.stringify(payload || {}),
+  });
+
+  if (!response.ok) {
+    await handleAuthError(response, 'Failed to send Telegram inventory alert');
+    throw new Error('Failed to send Telegram inventory alert');
+  }
+
+  return response.json();
 };
 
 // Reports analytics
@@ -159,6 +178,7 @@ export const getReportsAnalytics = async (params?: { range?: '7days' | '30days' 
 
   if (!response.ok) {
     await handleAuthError(response, 'Failed to fetch reports analytics');
+    throw new Error('Failed to fetch reports analytics');
   }
 
   const result = await response.json();
@@ -199,6 +219,7 @@ export const getExpiryLossDetails = async (params?: { range?: '7days' | '30days'
 
   if (!response.ok) {
     await handleAuthError(response, 'Failed to fetch expiry loss details');
+    throw new Error('Failed to fetch expiry loss details');
   }
 
   const result = await response.json();
@@ -214,6 +235,7 @@ export const resetExpiryLoss = async () => {
 
   if (!response.ok) {
     await handleAuthError(response, 'Failed to reset expiry loss');
+    throw new Error('Failed to reset expiry loss');
   }
 
   return response.json();
@@ -242,11 +264,12 @@ export const getDeadStockReport = async () => {
 
   if (!response.ok) {
     await handleAuthError(response, 'Failed to fetch dead stock report');
+    throw new Error('Failed to fetch dead stock report');
   }
 
   const result = await response.json();
   console.log('Dead stock API response:', result);
-  return result as { success: boolean; totalValue: number; totalItems: number; batches: DeadStockItem[] };
+  return result.data as { totalValue: number; totalItems: number; batches: DeadStockItem[] };
 };
 
 // AI demand prediction (per-medicine)
@@ -280,6 +303,7 @@ export const getDemandPrediction = async (month?: number): Promise<DemandPredict
 
   if (!response.ok) {
     await handleAuthError(response, 'Failed to fetch demand prediction');
+    throw new Error('Failed to fetch demand prediction');
   }
 
   const result = await response.json();
@@ -293,6 +317,7 @@ export const downloadDemandPredictionCsv = async (): Promise<Blob> => {
 
   if (!response.ok) {
     await handleAuthError(response, 'Failed to download prediction CSV');
+    throw new Error('Failed to download prediction CSV');
   }
 
   return await response.blob();
@@ -305,6 +330,7 @@ export const downloadPredictionDataset = async (): Promise<Blob> => {
 
   if (!response.ok) {
     await handleAuthError(response, 'Failed to download training dataset');
+    throw new Error('Failed to download training dataset');
   }
 
   return await response.blob();
@@ -525,6 +551,7 @@ export const getUsers = async (): Promise<AppUser[]> => {
 
   if (!response.ok) {
     await handleAuthError(response, 'Failed to fetch users');
+    throw new Error('Failed to fetch users');
   }
 
   const result = await response.json();
@@ -607,6 +634,7 @@ export const listBackups = async (limit: number = 20): Promise<BackupRecord[]> =
 
   if (!response.ok) {
     await handleAuthError(response, 'Failed to fetch backups');
+    throw new Error('Failed to fetch backups');
   }
 
   const result = await response.json();
@@ -620,6 +648,7 @@ export const getBackupDetails = async (backupId: string) => {
 
   if (!response.ok) {
     await handleAuthError(response, 'Failed to fetch backup details');
+    throw new Error('Failed to fetch backup details');
   }
 
   return response.json();
@@ -685,6 +714,7 @@ export const getCustomers = async (params?: { search?: string; page?: number; li
 
   if (!response.ok) {
     await handleAuthError(response, 'Failed to fetch customers');
+    throw new Error('Failed to fetch customers');
   }
 
   const result = await response.json();
@@ -707,6 +737,7 @@ export const searchActiveCustomers = async (query: string, limit: number = 10) =
 
   if (!response.ok) {
     await handleAuthError(response, 'Failed to search customers');
+    throw new Error('Failed to search customers');
   }
 
   const result = await response.json();
@@ -798,6 +829,7 @@ export const getCustomerHistory = async (id: string): Promise<{ sales: CustomerS
 
   if (!response.ok) {
     await handleAuthError(response, 'Failed to fetch customer history');
+    throw new Error('Failed to fetch customer history');
   }
 
   const result = await response.json();
@@ -821,6 +853,7 @@ export const getMyCustomerInfo = async (email?: string, phone?: string): Promise
 
   if (!response.ok) {
     await handleAuthError(response, 'Failed to fetch customer info');
+    throw new Error('Failed to fetch customer info');
   }
 
   return response.json();
@@ -862,6 +895,7 @@ export const getSuppliers = async (params?: { status?: string; search?: string }
 
   if (!response.ok) {
     await handleAuthError(response, 'Failed to fetch suppliers');
+    throw new Error('Failed to fetch suppliers');
   }
 
   const result = await response.json();
